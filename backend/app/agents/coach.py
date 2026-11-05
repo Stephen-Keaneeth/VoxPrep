@@ -187,20 +187,20 @@ def _evaluate_mock_coach_heuristics(
     lower = clean.lower()
     words = clean.split()
 
-    # Guardrail 1: Terse / 1-word answer
-    if len(words) <= 1:
-        return {
-            "coach_message": "Thanks for sharing! Can you tell me a little bit more about that so we can practice expanding your ideas?",
-            "correction": None,
-            "next_prompt": "What is one specific detail or example you can add to that?",
-        }
-
-    # Guardrail 2: Frustrated or "I don't know"
+    # Guardrail 1: Frustrated or "I don't know" / skip
     if any(k in lower for k in ["don't know", "do not know", "no idea", "not sure", "skip"]):
         return {
             "coach_message": "No worries at all! Let's try something a bit easier to get the momentum going.",
             "correction": None,
             "next_prompt": "What is your favorite food or meal to enjoy after a busy day?",
+        }
+
+    # Guardrail 2: Terse / 1-word answer
+    if len(words) <= 1:
+        return {
+            "coach_message": "Thanks for sharing! Can you tell me a little bit more about that so we can practice expanding your ideas?",
+            "correction": None,
+            "next_prompt": "What is one specific detail or example you can add to that?",
         }
 
     # Mode 1: English Improvement (Grammar, Vocabulary, Phrasing, Filler words)

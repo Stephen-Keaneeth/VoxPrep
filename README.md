@@ -1,127 +1,235 @@
-# VOXPREP 🎙️
-### AI-Powered Voice Interview & Communication Coach Platform
+# VOXPREP 🎙️⚡
+### AI-Powered Voice Interview & Communication Coaching Platform
 
-> **Theme:** Voice AI | **MVP Sprint:** 8–12 hours | **Team:** 2 members
-
----
-
-## What is VOXPREP?
-
-VOXPREP is a voice-first AI platform that helps students and job seekers:
-- Practice realistic mock interviews with an AI interviewer
-- Improve communication skills with an AI coach
-- Get personalized, data-driven feedback and performance reports
+> **Theme:** Voice AI | **Sprint Scope:** 8–12 Hour MVP | **Target Platform:** Web (Next.js + FastAPI)  
+> **Backend AI Provider:** NVIDIA NIM (Nemotron 70B LLM, Parakeet STT, Magpie TTS) | **Database & Auth:** Supabase
 
 ---
 
-## Two Core AI Agents
+## 🌟 What is VOXPREP?
 
-| Agent | Role |
-|---|---|
-| 🎯 **Agent 1 — AI Interviewer** | Conducts realistic HR and Technical interviews. Evaluates answers. Generates performance reports. |
-| 🗣 **Agent 2 — AI Communication Coach** | Provides conversational English practice, answer training, grammar correction, and vocabulary improvement. |
+**VOXPREP** is an adaptive, voice-first platform engineered to help job seekers and students excel in competitive technical interviews and daily professional communication. 
+
+Unlike static quiz generators or text-only chatbots, VOXPREP delivers **natural voice-to-voice dialogues**, real-time rubric-based evaluation, and adaptive communication coaching powered by two dedicated AI agents.
 
 ---
 
-## Quick Start (Development)
+## 🤖 The Two Core AI Agents
 
-### Prerequisites
-- Node.js 18+
-- Python 3.11+
-- Supabase account
-- NVIDIA Nemotron API key OR Google Gemini API key
+| Agent | Name | Role & Capabilities |
+|---|---|---|
+| 🎯 **Agent 1** | **AI Interviewer** | • Conducts realistic **HR & Technical** mock interviews.<br>• Evaluates answers in real time across **4 dimensions**: Relevance, Clarity, Depth, Examples (1–10 scale).<br>• Asks contextually adaptive follow-ups (max 1 follow-up/question, max 5 questions/session).<br>• Generates comprehensive performance reports with actionable improvement steps. |
+| 🗣 **Agent 2** | **AI Communication Coach** | • 3 practice modes: **Everyday Conversation**, **Answer Training**, and **English Improvement**.<br>• Delivers polite, constructive corrections (max 1–2 per exchange) with clearer alternatives.<br>• Tracks persistent communication profile: adapts to `skill_level`, `weak_areas`, and `strong_areas`. |
 
-### Frontend Setup
+---
+
+## 🏗️ System Architecture
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        VOXPREP PLATFORM                                │
+│                                                                        │
+│   ┌───────────────────────────┐      Voice Audio / REST JSON           │
+│   │   Frontend (Next.js 14)   │◄───────────────────────────────────┐   │
+│   │   • VoiceRecorder (WAV)   │                                    │   │
+│   │   • VoiceVisualizer       │                                    │   │
+│   │   • Interview & Coach UIs │                                    │   │
+│   └─────────────┬─────────────┘                                    │   │
+│                 │                                                  │   │
+│                 ▼                                                  │   │
+│   ┌─────────────────────────────────────────────────────────────┐  │   │
+│   │                 Backend (FastAPI on Railway)                │  │   │
+│   │                                                             │  │   │
+│   │   ┌───────────────────────┐     ┌────────────────────────┐  │  │   │
+│   │   │ AGENT 1: Interviewer  │     │ AGENT 2: Coach         │  │  │   │
+│   │   │ • Question Generation │     │ • Exercise Engine      │  │  │   │
+│   │   │ • 4-Dimension Rubric  │     │ • 1-2 Corrections Max  │  │  │   │
+│   │   │ • Report Generator    │     │ • Profile Learning     │  │  │   │
+│   │   └──────────┬────────────┘     └───────────┬────────────┘  │  │   │
+│   │              └──────────────┬───────────────┘               │  │   │
+│   │                             ▼                               │  │   │
+│   │               ┌───────────────────────────┐                 │  │   │
+│   │               │   Shared AI & DB Engine   │                 │  │   │
+│   │               │   • NVIDIA Nemotron 70B   │                 │  │   │
+│   │               │   • NVIDIA Parakeet ASR   │                 │  │   │
+│   │               │   • NVIDIA Magpie TTS     │                 │  │   │
+│   │               │   • Supabase Auth & DB    │                 │  │   │
+│   │               └─────────────┬─────────────┘                 │  │   │
+│   └─────────────────────────────┼───────────────────────────────┘  │   │
+│                                 │                                  │   │
+│                                 └──────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 👥 Two-Member Team Division
+
+VOXPREP is divided cleanly between Member A (Backend / AI) and Member B (Frontend / UX) per [`docs/06_TASK_DIVISION.md`](docs/06_TASK_DIVISION.md):
+
+- **Member A (Backend Lead)**: FastAPI, NVIDIA NIM voice pipeline, Interview & Coach agent state machines, Supabase persistence, global error middleware, automated test suite, Docker containerization & Railway deployment.
+- **Member B (Frontend Lead)**: Next.js 14 App Router, Tailwind CSS, shadcn/ui, audio recording via browser MediaRecorder, voice visualizer, session management UI, and API integration with backend contracts.
+
+---
+
+## ⚡ Quick Start (Local Development)
+
+### 1. Prerequisites
+- **Node.js**: v18.0+ & npm
+- **Python**: 3.11+ or 3.12 (Python 3.12 recommended)
+- **NVIDIA NIM API Key**: Free at [build.nvidia.com](https://build.nvidia.com) (~1000 credits on signup, no credit card required)
+- **Supabase Account**: Free project at [supabase.com](https://supabase.com)
+
+---
+
+### 2. Backend Setup (FastAPI)
+
+#### Step 2.1: Dedicated Python Virtual Environment (`.venv`)
+Always use a dedicated virtual environment to prevent package version conflicts:
+
+**Windows (PowerShell):**
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+*(If script execution is disabled in PowerShell, run: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`)*
+
+**Windows (Command Prompt):**
+```cmd
+python -m venv .venv
+.\.venv\Scripts\activate.bat
+```
+
+**Linux / macOS:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+#### Step 2.2: Install Dependencies
+```bash
+pip install --upgrade pip
+pip install -r backend/requirements.txt
+```
+
+#### Step 2.3: Configure Environment Variables
+```bash
+cp backend/.env.example backend/.env
+```
+Fill in your credentials in `backend/.env`:
+```ini
+HOST=0.0.0.0
+PORT=8000
+ENVIRONMENT=development
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+# NVIDIA NIM (Single key covers LLM, STT, and TTS)
+NVIDIA_API_KEY=nvapi-your_api_key_here
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+
+# Supabase Project Credentials
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+```
+
+#### Step 2.4: Initialize Database Tables
+Execute the idempotent SQL script `backend/schema.sql` in the **SQL Editor** of your Supabase Dashboard.
+
+#### Step 2.5: Start Backend Server
+```bash
+# From project root:
+uvicorn app.main:app --reload --app-dir backend --host 0.0.0.0 --port 8000
+```
+- API Root: [http://localhost:8000/](http://localhost:8000/)
+- Health Check: [http://localhost:8000/health](http://localhost:8000/health)
+- Swagger API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+#### Step 2.6: Run Backend Automated Tests
+```bash
+pytest backend/tests -v
+```
+
+---
+
+### 3. Frontend Setup (Next.js)
+
 ```bash
 cd frontend
 npm install
 cp .env.local.example .env.local
-# Fill in your Supabase keys in .env.local
+```
+
+Configure `frontend/.env.local`:
+```ini
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+Run the development server:
+```bash
 npm run dev
 ```
-
-### Backend Setup
-```bash
-cd backend
-pip install -r requirements.txt
-cp .env.example .env
-# Fill in your Gemini API key and Supabase keys in .env
-uvicorn app.main:app --reload
-```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## Environment Variables
+## 📡 API Contract Reference for Member B (Frontend)
 
-### Frontend (`frontend/.env.local`)
-```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+Below is the summary of backend endpoints. All endpoints return consistent JSON error envelopes on failure (`detail`, `error_type`, `status_code` for 400, 401, 404, 422, 500).
 
-### Backend (`backend/.env`)
-```
-NVIDIA_API_KEY=nvapi-your_nvidia_api_key_here
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_KEY=your_supabase_service_role_key
-```
+| Method | Endpoint | Description | Request Payload / Format |
+|---|---|---|---|
+| `GET` | `/health` | Service uptime healthcheck | None |
+| `GET` | `/` | API status and doc links | None |
+| `POST` | `/auth/register` | Register user & initialize profile | `{"email": str, "password": str, "name"?: str}` |
+| `POST` | `/auth/login` | Login user & retrieve access token | `{"email": str, "password": str}` |
+| `POST` | `/voice/process` | End-to-end voice loop (STT -> LLM -> TTS) | `multipart/form-data`: `file` (WAV audio), `agent_type?`, `session_id?` |
+| `POST` | `/interview/start` | Start mock interview session | `{"candidate_name": str, "role": str, "experience_level": str, "interview_type": "hr" \| "technical"}` |
+| `POST` | `/interview/respond`| Submit candidate answer | `{"session_id": str, "answer_text": str}` |
+| `POST` | `/interview/end` | Finalize interview & generate report | `{"session_id": str}` |
+| `GET` | `/interview/report/{id}` | Retrieve performance report | Path parameter: `session_id` |
+| `POST` | `/coach/start` | Start communication coaching session | `{"user_id": str, "mode": "conversation" \| "answer_training" \| "english_improvement"}` |
+| `POST` | `/coach/respond` | Submit speech to coach & get 1-2 corrections | `{"session_id": str, "user_text": str}` |
+| `POST` | `/coach/end` | Conclude session & update user profile | `{"session_id": str}` |
 
-> 💡 Get your free NVIDIA API key (no credit card) at https://build.nvidia.com  
-> ~1000 credits on signup — easily covers a full 8–12 hour hackathon build.
+> 📘 **Exhaustive Contract Documentation & cURL Examples**:  
+> See the dedicated backend documentation: [`backend/README.md`](backend/README.md) for full request/response schemas, JSON payloads, and copy-pasteable curl test commands for each endpoint.
 
 ---
 
-## Project Documentation
+## 🛡️ Guardrails & Conversational Boundaries
 
-All planning and architecture documents are in the `docs/` folder:
+- **Single Follow-Up**: Interviewer asks at most **1 follow-up** per core question.
+- **Session Boundary**: Mock interviews conclude after **5 core questions**.
+- **Coach Corrections**: Coach provides at most **1–2 constructive corrections** per exchange.
+- **Graceful Fallbacks**:
+  * Unintelligible audio -> Prompt user to repeat without crashing.
+  * TTS service unavailable -> `audio_base64: null` allows immediate frontend Web Speech API fallback.
+  * Missing API keys -> Safe in-memory mock fallback mode for offline testing.
 
-| File | Contents |
+---
+
+## 🚢 Production Deployment
+
+- **Backend**: Containerized via `Dockerfile` and configured with `railway.json` / `Procfile` for one-click deployment on [Railway](https://railway.app).
+- **Frontend**: Configured for continuous deployment on [Vercel](https://vercel.com).
+
+---
+
+## 📚 Project Documentation Index
+
+All architectural specs and design decisions are cataloged in `docs/`:
+
+| Doc | Subject |
 |---|---|
-| [`00_PROJECT_OVERVIEW.md`](docs/00_PROJECT_OVERVIEW.md) | High-level summary and document index |
-| [`01_ARCHITECTURE.md`](docs/01_ARCHITECTURE.md) | System architecture and flow diagrams |
-| [`02_TECH_STACK.md`](docs/02_TECH_STACK.md) | Technology choices and project structure |
-| [`03_PHASE_PLAN.md`](docs/03_PHASE_PLAN.md) | Phase-by-phase build plan with task lists |
-| [`04_MVP_vs_EXTRA.md`](docs/04_MVP_vs_EXTRA.md) | MVP feature list and what's deferred |
-| [`05_ACCEPTANCE_CRITERIA.md`](docs/05_ACCEPTANCE_CRITERIA.md) | Per-phase pass/fail gates |
-| [`06_TASK_DIVISION.md`](docs/06_TASK_DIVISION.md) | Member A and Member B responsibilities |
-| [`07_GUARDRAILS.md`](docs/07_GUARDRAILS.md) | Do's, Don'ts, Fallbacks, Agent rules |
-| [`08_AGENT_PROMPTS.md`](docs/08_AGENT_PROMPTS.md) | System prompts for Agent 1 and Agent 2 |
-
----
-
-## Build Phases
-
-```
-Phase 0 (Setup)       ~30 min
-Phase 1 (Voice Loop)  ~1.5 hrs
-Phase 2 (Interviewer) ~3 hrs
-Phase 3 (Coach)       ~2.5 hrs
-Phase 4 (Deploy)      ~1 hr
-─────────────────────────────
-Total MVP:            ~8.5 hrs
-```
-
----
-
-## Tech Stack
-
-- **Frontend:** Next.js 14, Tailwind CSS, shadcn/ui, Zustand
-- **Backend:** FastAPI (Python)
-- **LLM:** NVIDIA Nemotron 70B (`nvidia/llama-3.1-nemotron-70b-instruct`) via NVIDIA NIM
-- **STT:** NVIDIA Nemotron ASR / Parakeet via NVIDIA NIM REST API
-- **TTS:** NVIDIA Magpie TTS via NVIDIA NIM / Web Speech API (fallback)
-- **AI Provider:** NVIDIA API Catalog — single `NVIDIA_API_KEY` (~1000 free credits, hackathon-safe)
-- **Database & Auth:** Supabase (PostgreSQL) — free tier
-- **Deployment:** Vercel (frontend) + Railway (backend) — free tiers
-
----
-
-## Contributing (Team Rules)
-
-1. Work in phases — do not build Phase N+1 until Phase N passes acceptance criteria.
-2. Check `07_GUARDRAILS.md` before adding any new feature.
-3. Check `04_MVP_vs_EXTRA.md` before starting any task — if it's not MVP, skip it.
-4. Keep secrets out of the repository.
-5. Communicate when blocked — don't stay stuck for more than 20 minutes silently.
-
+| [`00_PROJECT_OVERVIEW.md`](docs/00_PROJECT_OVERVIEW.md) | Vision, Problem Statement & Doc Index |
+| [`01_ARCHITECTURE.md`](docs/01_ARCHITECTURE.md) | System Flow & Component Diagrams |
+| [`02_TECH_STACK.md`](docs/02_TECH_STACK.md) | Approved Tech Stack & NVIDIA NIM Endpoints |
+| [`03_PHASE_PLAN.md`](docs/03_PHASE_PLAN.md) | Milestones 0 to 4 Sprint Roadmap |
+| [`04_MVP_vs_EXTRA.md`](docs/04_MVP_vs_EXTRA.md) | Scope Boundaries & Post-MVP Backlog |
+| [`05_ACCEPTANCE_CRITERIA.md`](docs/05_ACCEPTANCE_CRITERIA.md) | Quality Gates & Pass/Fail Criteria |
+| [`06_TASK_DIVISION.md`](docs/06_TASK_DIVISION.md) | Member A & B Ownership Matrix |
+| [`07_GUARDRAILS.md`](docs/07_GUARDRAILS.md) | Error Handling, Agent Constraints & Tone Rules |
+| [`08_AGENT_PROMPTS.md`](docs/08_AGENT_PROMPTS.md) | Prompt Engineering for Interviewer & Coach |
