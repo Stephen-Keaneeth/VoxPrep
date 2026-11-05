@@ -1,0 +1,27 @@
+# ==============================================================================
+# VOXPREP Backend Dependencies
+# Target: Python 3.12 on Windows / Linux (Zero C-build dependencies)
+# ==============================================================================
+
+# Web Framework & ASGI Server
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Data Validation & Settings Management
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# AI Services & HTTP Clients
+openai==1.58.1
+httpx==0.28.1
+
+# Database & Authentication
+supabase==2.11.0
+
+# Environment Configuration & Form Handling
+python-dotenv==1.0.1
+python-multipart==0.0.20
+
+# Testing Framework & Async Support
+pytest==8.3.4
+pytest-asyncio==0.25.0
