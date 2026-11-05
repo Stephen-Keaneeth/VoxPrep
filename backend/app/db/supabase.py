@@ -8,6 +8,7 @@ import copy
 import logging
 import os
 import threading
+import uuid
 from typing import Any, Dict, List, Optional, Tuple, Union
 from dotenv import load_dotenv
 
@@ -206,31 +207,62 @@ class MockTableQuery:
 
 
 class MockAuth:
-    """Mock auth service for offline testing."""
+    """Mock auth service for offline testing with stateful user tracking."""
+
+    def __init__(self, lock: Optional[threading.Lock] = None):
+        self._lock = lock or threading.Lock()
+        self._users: Dict[str, Dict[str, Any]] = {
+            "demo@voxprep.ai": {
+                "id": "00000000-0000-0000-0000-000000000001",
+                "email": "demo@voxprep.ai",
+                "password": "Password123!",
+            }
+        }
 
     def sign_up(self, credentials: Dict[str, Any]) -> Any:
-        email = credentials.get("email", "test@voxprep.ai")
-        user_id = credentials.get("id", "00000000-0000-0000-0000-000000000001")
-        return type(
-            "MockAuthResponse",
-            (),
-            {
-                "user": type("User", (), {"id": user_id, "email": email})(),
-                "session": type("Session", (), {"access_token": "mock-jwt-token"})(),
-            },
-        )()
+        with self._lock:
+            email = credentials.get("email", "test@voxprep.ai").strip() or "test@voxprep.ai"
+            password = credentials.get("password", "")
+            user_id = credentials.get("id") or ("00000000-0000-0000-0000-000000000001" if email == "test@voxprep.ai" else str(uuid.uuid4()))
+
+            if email in self._users and email != "test@voxprep.ai":
+                raise Exception("User already registered")
+
+            self._users[email] = {
+                "id": user_id,
+                "email": email,
+                "password": password,
+            }
+            return type(
+                "MockAuthResponse",
+                (),
+                {
+                    "user": type("User", (), {"id": user_id, "email": email})(),
+                    "session": type("Session", (), {"access_token": "mock-jwt-token"})(),
+                },
+            )()
 
     def sign_in_with_password(self, credentials: Dict[str, Any]) -> Any:
-        email = credentials.get("email", "test@voxprep.ai")
-        user_id = credentials.get("id", "00000000-0000-0000-0000-000000000001")
-        return type(
-            "MockAuthResponse",
-            (),
-            {
-                "user": type("User", (), {"id": user_id, "email": email})(),
-                "session": type("Session", (), {"access_token": "mock-jwt-token"})(),
-            },
-        )()
+        with self._lock:
+            email = credentials.get("email", "test@voxprep.ai").strip() or "test@voxprep.ai"
+            password = credentials.get("password", "")
+
+            if email not in self._users and email != "test@voxprep.ai":
+                raise Exception("Invalid login credentials")
+
+            user_data = self._users.get(email)
+            if user_data and user_data.get("password") and password and user_data["password"] != password:
+                raise Exception("Invalid login credentials")
+
+            user_id = user_data["id"] if user_data else "00000000-0000-0000-0000-000000000001"
+            return type(
+                "MockAuthResponse",
+                (),
+                {
+                    "user": type("User", (), {"id": user_id, "email": email})(),
+                    "session": type("Session", (), {"access_token": "mock-jwt-token"})(),
+                },
+            )()
 
 
 class MockSupabaseClient:
@@ -255,7 +287,7 @@ class MockSupabaseClient:
             "interview_sessions": [],
             "coach_sessions": [],
         }
-        self.auth = MockAuth()
+        self.auth = MockAuth(lock=self._lock)
 
     def table(self, table_name: str) -> MockTableQuery:
         return MockTableQuery(table_name, self._store, lock=self._lock)

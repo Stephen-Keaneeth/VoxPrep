@@ -1,4 +1,4 @@
-# BRIEFING — 2026-11-05T17:24:00Z
+# BRIEFING — 2026-11-05T17:32:00Z
 
 ## Mission
 Investigate test suite and verification requirements for Milestone 1 (Services, Voice Pipeline, Auth), inspect existing E2E tests in `backend/tests/e2e/test_tier1_features.py`, design new unit/integration test specifications (`test_services.py`, `test_voice.py`, `test_auth.py`), verify alignment with routers and models, and provide cURL commands for manual testing.
@@ -22,16 +22,23 @@ Investigate test suite and verification requirements for Milestone 1 (Services, 
 - Updated: not yet
 
 ## Investigation State
-- **Explored paths**: None yet
-- **Key findings**: Initialized
-- **Unexplored areas**: ORIGINAL_REQUEST.md, PROJECT.md, backend/tests/e2e/test_tier1_features.py, backend/tests/, backend/routers/, backend/services/
+- **Explored paths**: `backend/tests/e2e/test_tier1_features.py`, `backend/tests/e2e/conftest.py`, `backend/tests/conftest.py`, `backend/tests/test_adversarial_m0.py`, `backend/app/main.py`, `backend/app/db/supabase.py`, `backend/schema.sql`, `docs/01_ARCHITECTURE.md`, `docs/03_PHASE_PLAN.md`, `docs/07_GUARDRAILS.md`
+- **Key findings**:
+  1. Authoritative request/response contracts for `POST /auth/register`, `POST /auth/login`, and `POST /voice/process` mapped and confirmed against E2E Tier 1 tests.
+  2. Identified critical test harness hazard in `backend/tests/e2e/conftest.py`: mounting `/auth` triggers premature switch to `real_app` which would 404 on unmounted M2/M3 routes. Devised route overlay solution.
+  3. Identified `MockAuth` limitation in `supabase.py`: needs in-memory credentials registry and UUID generation to enable offline duplicate email and invalid password tests.
+  4. Fully designed drop-in test suites: `test_services.py` (12 tests), `test_voice.py` (7 tests), `test_auth.py` (8 tests).
+  5. Built complete cURL testing suite for local mock testing and live cloud verification.
+- **Unexplored areas**: None for M1 test architecture.
 
 ## Key Decisions Made
-- Initialized investigation scope covering test fixtures, mocking strategies, router compliance with E2E tests, and manual verification curl commands.
+- Provided complete, ready-to-use Python test code blocks in `analysis.md` for `test_services.py`, `test_voice.py`, and `test_auth.py`.
+- Documented the route-overlay patch for `e2e/conftest.py` in the Worker playbook.
+- Provided sample cURL commands for both offline/mock local development and live cloud deployment.
 
 ## Artifact Index
 - DISPATCH.md — Dispatch log
 - BRIEFING.md — Situational awareness
 - progress.md — Liveness heartbeat
-- analysis.md — Detailed test suite analysis & implementation playbook
+- analysis.md — Detailed test suite analysis, drop-in test code & cURL commands
 - handoff.md — 5-component handoff report

@@ -10,9 +10,10 @@
 
 | When | What to sync on |
 |---|---|
+
 | After Phase 0 | Confirm API endpoints and data models match |
 | After Phase 1 | Test voice loop together end-to-end |
-| After Phase 2 | Test full interview session together |
+| After Phase 2 | Test f2ll interview session together |
 | After Phase 3 | Test coach session together |
 | After Phase 4 | Do final smoke test on production together |
 
