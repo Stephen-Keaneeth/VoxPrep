@@ -2,6 +2,17 @@
  * VOXPREP Voice Helpers & Web Speech API Utilities
  */
 
+// Retain active utterance reference to avoid Chrome/Chromium premature garbage collection bug
+let activeUtterance: SpeechSynthesisUtterance | null = null;
+let cachedVoices: SpeechSynthesisVoice[] = [];
+
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  cachedVoices = window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => {
+    cachedVoices = window.speechSynthesis.getVoices();
+  };
+}
+
 /**
  * Synthesizes speech using the browser's native Web Speech API (speechSynthesis).
  * Serves as the zero-latency, zero-cost fallback when remote TTS credits are low or offline.
@@ -26,15 +37,27 @@ export function speakText(
   // Cancel any ongoing speech
   window.speechSynthesis.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = options?.rate ?? 1.0;
+  // Strip leading/trailing quotes and markdown bolding for clean pronunciation
+  const clean = text.replace(/^["'\s]+|["'\s]+$/g, "").replace(/\*\*/g, "").trim();
+  if (!clean) {
+    options?.onEnd?.();
+    return null;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(clean);
+  activeUtterance = utterance;
+
+  utterance.rate = options?.rate ?? 0.95;
   utterance.pitch = options?.pitch ?? 1.0;
   utterance.volume = options?.volume ?? 1.0;
 
   // Attempt to select an English professional natural voice
-  const voices = window.speechSynthesis.getVoices();
+  const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
   const selectedVoice =
-    voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("English"))) ||
+    (options?.voiceName ? voices.find((v) => v.name.includes(options.voiceName!)) : null) ||
+    voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Neural") || v.name.includes("Online"))) ||
+    voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Guy") || v.name.includes("David") || v.name.includes("Mark"))) ||
+    voices.find((v) => v.lang.startsWith("en-US")) ||
     voices.find((v) => v.lang.startsWith("en")) ||
     voices[0];
 
@@ -43,14 +66,17 @@ export function speakText(
   }
 
   utterance.onend = () => {
+    activeUtterance = null;
     options?.onEnd?.();
   };
 
   utterance.onerror = (e) => {
+    activeUtterance = null;
     console.warn("Speech synthesis encountered an event:", e);
     options?.onError?.(e);
   };
 
+  window.speechSynthesis.resume();
   window.speechSynthesis.speak(utterance);
   return utterance;
 }
@@ -59,6 +85,7 @@ export function speakText(
  * Stops any active speech synthesis playback.
  */
 export function stopSpeaking(): void {
+  activeUtterance = null;
   if (typeof window !== "undefined" && "speechSynthesis" in window) {
     window.speechSynthesis.cancel();
   }

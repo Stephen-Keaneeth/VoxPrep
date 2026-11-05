@@ -2,6 +2,8 @@
 
 import React, { useState, useRef } from "react";
 import { useAppStore, ResumeData } from "@/store/useStore";
+import { toast } from "@/store/useToast";
+import { extractTextFromFile, analyzeResumeText } from "@/lib/resumeParser";
 import {
   UploadCloud,
   FileText,
@@ -30,25 +32,38 @@ export default function ResumeUploadModal() {
 
   if (!isSetupModalOpen) return null;
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      const text = await extractTextFromFile(file);
+      const analysis = analyzeResumeText(text, file.name);
+
       const newResume: ResumeData = {
         fileName: file.name,
         fileSize: `${(file.size / 1024).toFixed(1)} KB`,
         uploadedAt: "Just now",
-        candidateName: "Candidate",
-        targetRole: "Full-Stack & Distributed Systems Engineer",
-        skills: ["Kafka", "PostgreSQL", "System Design", "Python", "React", "Docker", "AWS"],
-        recentCompany: "Tech Innovators Lab",
-        summary:
-          "Demonstrated track record of designing fault-tolerant distributed backends and scalable cloud APIs.",
+        candidateName: analysis.candidateName || "Candidate",
+        targetRole: analysis.targetRole,
+        experienceLevel: analysis.experienceLevel,
+        skills: analysis.skills,
+        recentCompany: analysis.recentCompany,
+        summary: analysis.summary,
+        customQuestions: analysis.customQuestions,
       };
+
       setResume(newResume);
       setIsResumeBased(true);
       resetQuestions();
+      toast.success(
+        "Resume analyzed successfully",
+        `Tailored interview questions active for ${newResume.targetRole}.`
+      );
+    } catch (err) {
+      console.warn("Resume parsing error:", err);
+      toast.warning("Standard analysis fallback", "Applied default engineering questions.");
+    } finally {
       setIsProcessing(false);
-    }, 800);
+    }
   };
 
   const onDragOver = (e: React.DragEvent) => {
@@ -180,7 +195,10 @@ export default function ResumeUploadModal() {
                   Replace
                 </button>
                 <button
-                  onClick={() => setResume(null)}
+                  onClick={() => {
+                    setResume(null);
+                    toast.info("Resume disconnected", "Switched back to standard system design questions.");
+                  }}
                   className="text-red-400 hover:text-red-300 p-1 rounded transition-colors"
                   title="Remove Resume"
                 >

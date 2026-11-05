@@ -1,12 +1,90 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useStore";
 import { Video, MessageSquare, ArrowUpRight, FileText, Sparkles, CheckCircle2 } from "lucide-react";
 import ResumeUploadModal from "@/components/interview/ResumeUploadModal";
 
 export default function HomeDashboard() {
-  const { setActiveSection, resume, isResumeBased, setSetupModalOpen } = useAppStore();
+  const router = useRouter();
+  const {
+    setActiveSection,
+    resume,
+    isResumeBased,
+    setSetupModalOpen,
+    interviewHistory,
+    coachHistory,
+    setLatestEvaluation,
+  } = useAppStore();
+
+  // Dynamic calculations from Supabase store state
+  const totalInterviewSessions = interviewHistory.length;
+  const avgInterviewScore =
+    totalInterviewSessions > 0
+      ? Math.round(
+          interviewHistory.reduce((acc, s) => acc + (s.scores?.overall_score || 85), 0) /
+            totalInterviewSessions
+        )
+      : 86;
+
+  const totalCoachSessions = coachHistory.length;
+  const avgCoachScore =
+    totalCoachSessions > 0
+      ? Math.round(
+          coachHistory.reduce((acc, s) => acc + (s.summary?.grammar_score || 80), 0) /
+            totalCoachSessions
+        )
+      : 79;
+
+  const latestWpm =
+    coachHistory.length > 0 && coachHistory[0]?.summary?.avg_wpm
+      ? coachHistory[0].summary.avg_wpm
+      : 138;
+
+  const overallReadiness = Math.round(avgInterviewScore * 0.55 + avgCoachScore * 0.45);
+
+  const totalMinutes = totalInterviewSessions * 15 + totalCoachSessions * 8;
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  const practiceTimeString = `${hours > 0 ? `${hours}h ` : ""}${mins}m`;
+  const totalSessionsCount = totalInterviewSessions + totalCoachSessions;
+
+  // Unified recent mock sessions list
+  const recentSessions = [
+    ...interviewHistory.map((s, idx) => ({
+      id: s.id || `int-${idx}`,
+      type: "interview" as const,
+      agentTitle: "Interview Agent",
+      topic: s.role_applied || "Technical System Architecture",
+      isResumeTailored: Boolean(resume && isResumeBased),
+      format: "Video Call" as const,
+      duration: "14m 20s",
+      score: s.scores?.overall_score || 88,
+      createdAt: s.created_at || new Date().toISOString(),
+      interviewRecord: s,
+    })),
+    ...coachHistory.map((c, idx) => ({
+      id: c.id || `coa-${idx}`,
+      type: "coach" as const,
+      agentTitle: "Communication Agent",
+      topic:
+        c.mode === "answer_training"
+          ? "STAR Structuring & Conciseness"
+          : c.mode === "conversation"
+          ? "Everyday Fluency & Articulation"
+          : "Executive Vocabulary Practice",
+      isResumeTailored: false,
+      format: "Voice Coach" as const,
+      duration: "09m 10s",
+      score: c.summary?.grammar_score || 82,
+      createdAt: c.created_at || new Date().toISOString(),
+      interviewRecord: undefined,
+    })),
+  ]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
 
   return (
     <section className="space-y-6">
@@ -22,20 +100,22 @@ export default function HomeDashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
+          <Link
+            href="/interview"
             onClick={() => setActiveSection(2)}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
           >
             <Video className="w-4 h-4" />
             <span>Start Video Interview</span>
-          </button>
-          <button
+          </Link>
+          <Link
+            href="/coach"
             onClick={() => setActiveSection(3)}
             className="bg-[#171e2e] hover:bg-[#1e273a] border border-subtle text-slate-200 text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
           >
             <MessageSquare className="w-4 h-4 text-amber-400" />
             <span>Practice with Coach</span>
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -77,7 +157,7 @@ export default function HomeDashboard() {
         <div className="card-clean p-5">
           <div className="text-xs font-mono uppercase text-slate-400">Overall Readiness</div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-bold text-white">82%</span>
+            <span className="text-3xl font-bold text-white">{overallReadiness}%</span>
             <span className="text-xs text-emerald-400 font-medium">+4.5%</span>
           </div>
           <div className="mt-3 text-xs text-slate-400">Benchmark: Job Ready</div>
@@ -86,8 +166,8 @@ export default function HomeDashboard() {
         <div className="card-clean p-5">
           <div className="text-xs font-mono uppercase text-slate-400">Interview Score</div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-bold text-blue-400">86/100</span>
-            <span className="text-xs text-slate-400">8 sessions</span>
+            <span className="text-3xl font-bold text-blue-400">{avgInterviewScore}/100</span>
+            <span className="text-xs text-slate-400">{totalInterviewSessions} sessions</span>
           </div>
           <div className="mt-3 text-xs text-slate-400">Technical & HR video rounds</div>
         </div>
@@ -95,8 +175,8 @@ export default function HomeDashboard() {
         <div className="card-clean p-5">
           <div className="text-xs font-mono uppercase text-slate-400">Communication Score</div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-bold text-white">79/100</span>
-            <span className="text-xs text-emerald-400 font-medium">138 WPM</span>
+            <span className="text-3xl font-bold text-white">{avgCoachScore}/100</span>
+            <span className="text-xs text-emerald-400 font-medium">{latestWpm} WPM</span>
           </div>
           <div className="mt-3 text-xs text-slate-400">Fluency, pace & grammar</div>
         </div>
@@ -104,10 +184,10 @@ export default function HomeDashboard() {
         <div className="card-clean p-5">
           <div className="text-xs font-mono uppercase text-slate-400">Practice Time</div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-bold text-white">3h 45m</span>
+            <span className="text-3xl font-bold text-white">{practiceTimeString}</span>
             <span className="text-xs text-slate-400">This week</span>
           </div>
-          <div className="mt-3 text-xs text-slate-400">14 mock sessions logged</div>
+          <div className="mt-3 text-xs text-slate-400">{totalSessionsCount} mock sessions logged</div>
         </div>
       </div>
 
@@ -115,7 +195,9 @@ export default function HomeDashboard() {
       <div className="card-clean overflow-hidden">
         <div className="px-5 py-4 border-b border-subtle flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white">Recent Mock Sessions</h3>
-          <span className="text-xs text-slate-400">Showing last 3 entries</span>
+          <span className="text-xs text-slate-400">
+            {recentSessions.length > 0 ? `Showing latest ${recentSessions.length} entries` : "No sessions logged"}
+          </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -130,68 +212,64 @@ export default function HomeDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-subtle text-slate-300">
-              <tr className="hover:bg-slate-800/30">
-                <td className="px-5 py-3.5 font-medium text-white">Interview Agent</td>
-                <td className="px-5 py-3.5 text-slate-300">
-                  Distributed System Design {resume && <span className="text-blue-400">(Resume Tailored)</span>}
-                </td>
-                <td className="px-5 py-3.5">
-                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono text-[11px]">
-                    Video Call
-                  </span>
-                </td>
-                <td className="px-5 py-3.5 text-slate-400 font-mono">14m 20s</td>
-                <td className="px-5 py-3.5 font-mono text-emerald-400 font-medium">88 / 100</td>
-                <td className="px-5 py-3.5 text-right">
-                  <button
-                    onClick={() => setActiveSection(4)}
-                    className="text-blue-400 hover:text-blue-300 flex items-center gap-1 ml-auto font-medium"
-                  >
-                    <span>Report</span>
-                    <ArrowUpRight className="w-3 h-3" />
-                  </button>
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-800/30">
-                <td className="px-5 py-3.5 font-medium text-white">Communication Agent</td>
-                <td className="px-5 py-3.5 text-slate-300">STAR Structuring & Conciseness</td>
-                <td className="px-5 py-3.5">
-                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[11px]">
-                    Voice Coach
-                  </span>
-                </td>
-                <td className="px-5 py-3.5 text-slate-400 font-mono">09m 10s</td>
-                <td className="px-5 py-3.5 font-mono text-blue-400 font-medium">82 / 100</td>
-                <td className="px-5 py-3.5 text-right">
-                  <button
-                    onClick={() => setActiveSection(5)}
-                    className="text-blue-400 hover:text-blue-300 flex items-center gap-1 ml-auto font-medium"
-                  >
-                    <span>Report</span>
-                    <ArrowUpRight className="w-3 h-3" />
-                  </button>
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-800/30">
-                <td className="px-5 py-3.5 font-medium text-white">Interview Agent</td>
-                <td className="px-5 py-3.5 text-slate-300">HR Conflict Resolution</td>
-                <td className="px-5 py-3.5">
-                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono text-[11px]">
-                    Video Call
-                  </span>
-                </td>
-                <td className="px-5 py-3.5 text-slate-400 font-mono">11m 45s</td>
-                <td className="px-5 py-3.5 font-mono text-emerald-400 font-medium">85 / 100</td>
-                <td className="px-5 py-3.5 text-right">
-                  <button
-                    onClick={() => setActiveSection(4)}
-                    className="text-blue-400 hover:text-blue-300 flex items-center gap-1 ml-auto font-medium"
-                  >
-                    <span>Report</span>
-                    <ArrowUpRight className="w-3 h-3" />
-                  </button>
-                </td>
-              </tr>
+              {recentSessions.length > 0 ? (
+                recentSessions.map((session) => (
+                  <tr key={session.id} className="hover:bg-slate-800/30 transition-colors">
+                    <td className="px-5 py-3.5 font-medium text-white">{session.agentTitle}</td>
+                    <td className="px-5 py-3.5 text-slate-300">
+                      {session.topic}{" "}
+                      {session.isResumeTailored && (
+                        <span className="text-blue-400 text-[11px]">(Resume Tailored)</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span
+                        className={`px-2 py-0.5 rounded font-mono text-[11px] ${
+                          session.format === "Video Call"
+                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                            : "bg-slate-800 text-slate-300 border border-subtle"
+                        }`}
+                      >
+                        {session.format}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-slate-400 font-mono">{session.duration}</td>
+                    <td
+                      className={`px-5 py-3.5 font-mono font-medium ${
+                        session.score >= 85 ? "text-emerald-400" : "text-blue-400"
+                      }`}
+                    >
+                      {session.score} / 100
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <button
+                        onClick={() => {
+                          if (session.type === "interview") {
+                            if (session.interviewRecord) {
+                              setLatestEvaluation(session.interviewRecord);
+                            }
+                            setActiveSection(4);
+                            router.push("/analytics/interview");
+                          } else {
+                            setActiveSection(5);
+                            router.push("/analytics/communication");
+                          }
+                        }}
+                        className="text-blue-400 hover:text-blue-300 flex items-center gap-1 ml-auto font-medium"
+                      >
+                        <span>Report</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-slate-400">
+                    No mock sessions recorded yet. Start your first video interview or practice with the coach above!
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

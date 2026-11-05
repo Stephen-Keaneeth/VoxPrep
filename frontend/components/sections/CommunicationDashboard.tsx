@@ -1,15 +1,32 @@
 "use client";
 
 import React from "react";
-import { CheckCircle2 } from "lucide-react";
+import { useAppStore } from "@/store/useStore";
+import { CheckCircle2, Sparkles } from "lucide-react";
 
 export default function CommunicationDashboard() {
+  const { coachHistory } = useAppStore();
+
+  const latestSession = coachHistory.length > 0 ? coachHistory[0] : null;
+  const currentWpm = latestSession?.summary?.avg_wpm ?? 138;
+  const currentFillers = latestSession?.summary?.total_fillers ?? 1.2;
+  const currentGrammar = latestSession?.summary?.grammar_score ?? 94;
+  const currentFluencyTier = latestSession?.summary?.fluency_tier ?? "Proficient";
+
   return (
     <section className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Communication Performance Dashboard</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-white tracking-tight">Communication Performance Dashboard</h2>
+            {latestSession && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span>Live Session Synced</span>
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-400 mt-0.5">
             Vocal fluency, grammar accuracy, speaking pace and filler word analytics.
           </p>
@@ -17,7 +34,7 @@ export default function CommunicationDashboard() {
 
         <span className="text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded inline-flex items-center gap-1.5 w-fit">
           <CheckCircle2 className="w-3.5 h-3.5" />
-          <span>Overall Fluency: Proficient</span>
+          <span>Overall Fluency: {currentFluencyTier}</span>
         </span>
       </div>
 
@@ -26,22 +43,24 @@ export default function CommunicationDashboard() {
         <div className="card-clean p-5">
           <div className="text-xs font-mono uppercase text-slate-400">Speaking Pace</div>
           <div className="text-3xl font-bold text-white mt-2">
-            138 <span className="text-xs font-normal text-slate-400">WPM</span>
+            {currentWpm} <span className="text-xs font-normal text-slate-400">WPM</span>
           </div>
-          <div className="mt-2 text-xs text-emerald-400">Target: 130–150 WPM (Ideal)</div>
+          <div className="mt-2 text-xs text-emerald-400">
+            {currentWpm >= 130 && currentWpm <= 160 ? "Target: 130–150 WPM (Ideal)" : "Aim for steady 130–150 WPM"}
+          </div>
         </div>
 
         <div className="card-clean p-5">
           <div className="text-xs font-mono uppercase text-slate-400">Filler Word Rate</div>
           <div className="text-3xl font-bold text-emerald-400 mt-2">
-            1.2 <span className="text-xs font-normal text-slate-400">/ min</span>
+            {currentFillers} <span className="text-xs font-normal text-slate-400">/ session</span>
           </div>
-          <div className="mt-2 text-xs text-slate-400">Down from 3.8 / min (68% improvement)</div>
+          <div className="mt-2 text-xs text-slate-400">Target: Less than 3 per minute</div>
         </div>
 
         <div className="card-clean p-5">
           <div className="text-xs font-mono uppercase text-slate-400">Grammar Accuracy</div>
-          <div className="text-3xl font-bold text-blue-400 mt-2">94%</div>
+          <div className="text-3xl font-bold text-blue-400 mt-2">{currentGrammar}%</div>
           <div className="mt-2 text-xs text-slate-400">Accurate verb tenses and agreement</div>
         </div>
 
