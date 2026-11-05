@@ -29,7 +29,7 @@ VOXPREP is a voice-first AI platform that helps students and job seekers:
 - Node.js 18+
 - Python 3.11+
 - Supabase account
-- Google Gemini API key
+- NVIDIA Nemotron API key OR Google Gemini API key
 
 ### Frontend Setup
 ```bash
@@ -62,12 +62,13 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ### Backend (`backend/.env`)
 ```
-GEMINI_API_KEY=your_gemini_api_key
+NVIDIA_API_KEY=nvapi-your_nvidia_api_key_here
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_SERVICE_KEY=your_supabase_service_role_key
-DEEPGRAM_API_KEY=optional_deepgram_key
-ELEVENLABS_API_KEY=optional_elevenlabs_key
 ```
+
+> 💡 Get your free NVIDIA API key (no credit card) at https://build.nvidia.com  
+> ~1000 credits on signup — easily covers a full 8–12 hour hackathon build.
 
 ---
 
@@ -107,11 +108,12 @@ Total MVP:            ~8.5 hrs
 
 - **Frontend:** Next.js 14, Tailwind CSS, shadcn/ui, Zustand
 - **Backend:** FastAPI (Python)
-- **LLM:** Google Gemini 2.0 Flash
-- **STT:** Gemini Live API / Deepgram
-- **TTS:** Web Speech API / ElevenLabs
-- **Database & Auth:** Supabase (PostgreSQL)
-- **Deployment:** Vercel (frontend) + Railway (backend)
+- **LLM:** NVIDIA Nemotron 70B (`nvidia/llama-3.1-nemotron-70b-instruct`) via NVIDIA NIM
+- **STT:** NVIDIA Nemotron ASR / Parakeet via NVIDIA NIM REST API
+- **TTS:** NVIDIA Magpie TTS via NVIDIA NIM / Web Speech API (fallback)
+- **AI Provider:** NVIDIA API Catalog — single `NVIDIA_API_KEY` (~1000 free credits, hackathon-safe)
+- **Database & Auth:** Supabase (PostgreSQL) — free tier
+- **Deployment:** Vercel (frontend) + Railway (backend) — free tiers
 
 ---
 

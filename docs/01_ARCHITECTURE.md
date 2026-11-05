@@ -34,7 +34,7 @@
 │  │              │  Shared Services      │                        │  │
 │  │              │  • User Profile DB    │                        │  │
 │  │              │  • Session History    │                        │  │
-│  │              │  • LLM Client (Gemini)│                        │  │
+│  │              │  • LLM Client (NVIDIA Nemotron) │                        │  │
 │  │              │  • Auth (Supabase)    │                        │  │
 │  │              └───────────────────────┘                        │  │
 │  └──────────────────────────────────────────────────────────────┘  │
@@ -56,19 +56,20 @@
   │        │                                            │
   │        ▼                                            │
   │  [2] STT — Speech-to-Text                           │
-  │       Gemini Live API / Deepgram / Whisper          │
+  │       NVIDIA Nemotron ASR / Parakeet (REST)         │
   │        │                                            │
   │        ▼                                            │
   │  [3] Text → Agent Router                            │
   │       Decide: Interviewer or Coach?                 │
   │        │                                            │
   │        ▼                                            │
-  │  [4] LLM Processing (Gemini 2.0 Flash)              │
+  │  [4] LLM Processing                                 │
+  │       NVIDIA Nemotron 70B (OpenAI-compatible API)   │
   │       Agent 1 or Agent 2 System Prompt Active       │
   │        │                                            │
   │        ▼                                            │
   │  [5] TTS — Text-to-Speech                           │
-  │       Gemini TTS / ElevenLabs / Web Speech API      │
+  │       NVIDIA Magpie TTS / Web Speech API (fallback) │
   │        │                                            │
   │        ▼                                            │
   │  [6] Audio Playback to User                         │
@@ -207,7 +208,7 @@ CoachSession
 | Backend — Auth | User login/register | Phase 1 |
 | Backend — Agent 1 Router | Interview session management | Phase 2 |
 | Backend — Agent 2 Router | Coach session management | Phase 3 |
-| Backend — LLM Client | Gemini API wrapper | Phase 1 |
+| Backend — LLM Client | NVIDIA Nemotron API wrapper (OpenAI-compatible) | Phase 1 |
 | Backend — STT Client | Speech-to-text integration | Phase 1 |
 | Backend — TTS Client | Text-to-speech integration | Phase 1 |
 | Backend — Report Generator | Post-interview analysis | Phase 2 |
