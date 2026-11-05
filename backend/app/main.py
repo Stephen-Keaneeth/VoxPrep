@@ -95,16 +95,17 @@ async def root():
 # =============================================================================
 # Router Mount Points (Milestones 1–3)
 # =============================================================================
-from app.routers import auth, voice
+from app.routers import auth, voice, interview, coach
 
 # Milestone 1: Phase 1 Routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(voice.router, prefix="/voice", tags=["Voice Pipeline"])
 
-# Milestones 2 & 3: Planned Mount Points
-# from app.routers import interview, coach
-# app.include_router(interview.router, prefix="/interview", tags=["Interviewer Agent"])
-# app.include_router(coach.router, prefix="/coach", tags=["Coach Agent"])
+# Milestone 2: Phase 2 Interviewer Agent Router
+app.include_router(interview.router, prefix="/interview", tags=["Interviewer Agent"])
+
+# Milestone 3: Phase 3 Communication Coach Agent Router
+app.include_router(coach.router, prefix="/coach", tags=["coach"])
 
 
 if __name__ == "__main__":

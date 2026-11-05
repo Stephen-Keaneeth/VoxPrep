@@ -84,6 +84,14 @@ CREATE INDEX IF NOT EXISTS idx_interview_sessions_is_complete ON interview_sessi
 CREATE INDEX IF NOT EXISTS idx_interview_sessions_interview_type ON interview_sessions(interview_type);
 CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_created ON interview_sessions(user_id, created_at DESC);
 
+-- Milestone 2 Idempotent Schema Enhancements
+ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS role TEXT;
+ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'in_progress';
+ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS question_count INT DEFAULT 0;
+ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS history JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
+CREATE INDEX IF NOT EXISTS idx_interview_sessions_status ON interview_sessions(status);
+
 -- -----------------------------------------------------------------------------
 -- 4. COACH_SESSIONS TABLE
 -- Stores AI communication coaching sessions conducted by Agent 2 (AI Coach).
@@ -105,6 +113,20 @@ CREATE INDEX IF NOT EXISTS idx_coach_sessions_created_at ON coach_sessions(creat
 CREATE INDEX IF NOT EXISTS idx_coach_sessions_mode ON coach_sessions(mode);
 CREATE INDEX IF NOT EXISTS idx_coach_sessions_is_complete ON coach_sessions(is_complete);
 CREATE INDEX IF NOT EXISTS idx_coach_sessions_user_created ON coach_sessions(user_id, created_at DESC);
+
+-- Milestone 3 Idempotent Schema Enhancements
+-- Phase 3 AI Communication Coach Agent & Profile Learning
+ALTER TABLE coach_sessions ADD COLUMN IF NOT EXISTS history JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE coach_sessions ADD COLUMN IF NOT EXISTS corrections JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE coach_sessions ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'in_progress';
+ALTER TABLE coach_sessions ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
+ALTER TABLE coach_sessions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
+CREATE INDEX IF NOT EXISTS idx_coach_sessions_status ON coach_sessions(status);
+
+-- Optional top-level columns on users for direct column access
+ALTER TABLE users ADD COLUMN IF NOT EXISTS skill_level TEXT DEFAULT 'intermediate';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS weak_areas JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS strong_areas JSONB DEFAULT '[]'::jsonb;
 
 -- -----------------------------------------------------------------------------
 -- 5. ROW LEVEL SECURITY (RLS) & ACCESS CONTROL
