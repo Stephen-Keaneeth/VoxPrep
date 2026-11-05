@@ -32,13 +32,13 @@ Build backend MVP for VOXPREP AI interview & communication coaching platform (Fa
   1. Survey phase [done]
   2. E2E Testing Track [done - TEST_READY.md published]
   3. Milestone 0: Phase 0 Setup [done - Gate 2 PASS]
-  4. Milestone 1: Phase 1 AI Services & Voice Pipeline [in-progress - worker_m1 executing]
-  5. Milestone 2: Phase 2 Interviewer Agent [pending]
+  4. Milestone 1: Phase 1 AI Services & Voice Pipeline [done - Gate 1 PASS, 167/167 tests passing]
+  5. Milestone 2: Phase 2 Interviewer Agent [in-progress - 3 Explorers dispatched]
   6. Milestone 3: Phase 3 Coach Agent [pending]
   7. Milestone 4: Phase 4 Hardening & Deployment [pending]
   8. Milestone Final: 100% E2E Pass & Adversarial Hardening [pending]
-- **Current phase**: Milestone 1 Implementation
-- **Current focus**: worker_m1 implementing AI services (Nemotron, Parakeet, Magpie), Routers (voice, auth), and test suites
+- **Current phase**: Milestone 2 Exploration
+- **Current focus**: explorer_m2_1 (Interviewer agent & scoring), explorer_m2_2 (Report & persistence), explorer_m2_3 (Router & test suite)
 
 ## 🔒 Key Constraints
 - Never write, modify, or create source code files directly.
@@ -55,21 +55,20 @@ Build backend MVP for VOXPREP AI interview & communication coaching platform (Fa
 
 ## Key Decisions Made
 - Milestone 0 Gate 2 passed cleanly.
-- Milestone 1 Explorers completed comprehensive drop-in blueprints.
-- Dispatched worker_m1 to implement AI services, voice/auth routers, and tests.
+- Milestone 1 Gate 1 passed cleanly (all reviewers APPROVE, challengers APPROVE, auditor CLEAN).
+- Milestone 2 exploration launched with 3 parallel Explorers.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| explorer_m1_1 | teamwork_explorer | M1: AI Services (llm, stt, tts) design | completed | 73eff160-6028-44b1-9921-8f4cdfc288ef |
-| explorer_m1_2 | teamwork_explorer | M1: Routers (voice, auth) design | completed | ae8abe0a-db56-453c-b63e-ef253306d3c3 |
-| explorer_m1_3 | teamwork_explorer | M1: Test suite & verification design | completed | 200be439-10de-4a25-81d4-48faa55da51b |
-| worker_m1 | teamwork_worker | M1 Implementation: AI services, routers, tests | in-progress | 40c5a997-2d18-4501-9ee0-4dd7918c7536 |
+| explorer_m2_1 | teamwork_explorer | M2: Interviewer Agent & Rubric Scoring | in-progress | 8060edcd-178f-486f-be4c-6251646ce005 |
+| explorer_m2_2 | teamwork_explorer | M2: Report Generation & Persistence | in-progress | acfce271-d3ee-4732-8ca5-e501f3054d7e |
+| explorer_m2_3 | teamwork_explorer | M2: Interview Router & Test Suite | in-progress | 0491b739-7069-453b-a7b2-f0379613c4ab |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 4 / 16 (for M1 cycle)
-- Pending subagents: 40c5a997-2d18-4501-9ee0-4dd7918c7536
+- Spawn count: 3 / 16 (for M2 cycle)
+- Pending subagents: 8060edcd-178f-486f-be4c-6251646ce005, acfce271-d3ee-4732-8ca5-e501f3054d7e, 0491b739-7069-453b-a7b2-f0379613c4ab
 - Predecessor: none
 - Successor: none
 
