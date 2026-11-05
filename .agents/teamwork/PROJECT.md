@@ -87,7 +87,7 @@ backend/
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
 | M0 | Phase 0 Setup & Environment | `.venv`, `requirements.txt`, `.env.example`, `schema.sql`, `main.py` skeleton with `GET /health` | none | DONE |
-| M1 | Phase 1 AI Services & Voice Pipeline | `services/llm.py`, `services/stt.py`, `services/tts.py`, `db/supabase.py`, `routers/voice.py`, `routers/auth.py`, test mocks & curl commands | M0 | IN_PROGRESS |
+| M1 | Phase 1 AI Services & Voice Pipeline | `services/llm.py`, `services/stt.py`, `services/tts.py`, `db/supabase.py`, `routers/voice.py`, `routers/auth.py`, test mocks & curl commands | M0 | DONE |
 | M2 | Phase 2 Interviewer Agent & Sessions | `agents/interviewer.py`, `services/report.py`, `routers/interview.py`, session management & persistence, rubric scoring, report retrieval | M1 | PLANNED |
 | M3 | Phase 3 Communication Coach Agent | `agents/coach.py`, `routers/coach.py`, profile management, session persistence, 3 coach modes | M1 | PLANNED |
 | M4 | Phase 4 Hardening & Deployment | Global error handlers, README backend docs, Dockerfile, railway.json, Procfile, local/live deployment verification | M2, M3 | PLANNED |

@@ -262,7 +262,15 @@ try:
         make_wav_bytes,
     )
 except ImportError:
-    pass
+    try:
+        from tests.e2e.conftest import (
+            dummy_wav_bytes,
+            corrupt_audio_bytes,
+            empty_audio_bytes,
+            make_wav_bytes,
+        )
+    except ImportError:
+        pass
 
 __all__ = [
     "client",
