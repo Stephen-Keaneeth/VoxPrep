@@ -91,7 +91,7 @@ backend/
 | M2 | Phase 2 Interviewer Agent & Sessions | `agents/interviewer.py`, `services/report.py`, `routers/interview.py`, session management & persistence, rubric scoring, report retrieval | M1 | DONE |
 | M3 | Phase 3 Communication Coach Agent | `agents/coach.py`, `routers/coach.py`, profile management, session persistence, 3 coach modes | M1 | DONE |
 | M4 | Phase 4 Hardening & Deployment | Global error handlers, README backend docs, Dockerfile, railway.json, Procfile, local/live deployment verification | M2, M3 | DONE |
-| M-Final | Final Acceptance & Adversarial Hardening | Phase 1: 100% E2E test pass (Tiers 1–4). Phase 2: Tier 5 adversarial coverage hardening | M4, E2E | IN_PROGRESS |
+| M-Final | Final Acceptance & Adversarial Hardening | Phase 1: 100% E2E test pass (Tiers 1–4). Phase 2: Tier 5 adversarial coverage hardening | M4, E2E | DONE |
 
 ## Interface Contracts
 
