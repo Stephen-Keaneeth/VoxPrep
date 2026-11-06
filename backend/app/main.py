@@ -6,7 +6,15 @@ Milestone 4: Phase 4 Production Hardening, Error Handling, and Deployment
 
 import logging
 import os
+import sys
+from pathlib import Path
 from typing import List
+
+# Ensure backend root is in sys.path for direct module resolution
+_backend_dir = str(Path(__file__).resolve().parent.parent)
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+
 from fastapi import FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
