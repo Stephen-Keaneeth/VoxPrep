@@ -6,7 +6,7 @@ import { speakText, stopSpeaking } from "@/lib/voice";
 
 interface VoicePlayerProps {
   src?: string;
-  audioBase64?: string;
+  audioBase64?: string | null;
   textFallback?: string;
   autoPlay?: boolean;
   onPlaybackStart?: () => void;

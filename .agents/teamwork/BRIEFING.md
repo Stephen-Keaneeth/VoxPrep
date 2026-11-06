@@ -1,32 +1,31 @@
-# BRIEFING — 2026-11-05T15:55:00Z
+# BRIEFING — 2026-11-06T12:30:00Z
 
 ## Mission
-Orchestrate VOXPREP Backend MVP implementation across Phases 0 to 4.
+Coordinate spec-driven frontend rebuild for VoxPrep and oversee orchestration, sentinel monitoring, and victory auditing.
 
 ## 🔒 My Identity
 - Archetype: sentinel
-- Working directory: d:\My Coding Environment\Projects\ASCEND_Projects\AI-Interviewer\.agents\teamwork
-- Orchestrator: f8724849-4618-4264-8e42-f39ec432b779
-- Victory Auditor: a75be14d-64e3-414d-a63e-dfaf0ebadcc7
+- Working directory: c:\Project\VoxPrep\.agents\teamwork
+- Orchestrator: 55e0bf3f-dbbe-407b-930a-d465c34fe1ef
+- Victory Auditor: 67998088-0efe-4b32-9223-3ee5a9507cca
 
 ## 🔒 Key Constraints
 - No technical decisions — relay only
 - Victory Audit is MANDATORY before reporting completion
-- Route: General -> teamwork_orchestrator
-- Phase progression: strictly Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4
-- Python virtual environment `.venv` required for all installations and executions
-- Supabase is persistent source of truth for session state
-- NVIDIA NIM APIs (Nemotron LLM, Parakeet STT, Magpie TTS)
-- Max 5 questions per interview, max 1 follow-up per question
-- No frontend code, no post-MVP features, no real secrets committed
+- Absolute single source of truth is backend/ and backend/schema.sql
+- Build ONLY what backend requires and defines (no fake tabs, no mock bloat)
+- Do NOT modify backend route definitions or database schemas
+- 0 TypeScript errors, 0 ESLint errors/warnings, clean build
+- Normalization: score <= 10 ? Math.round(score * 10) : score
 
 ## User Context
-- **Last user request**: Approved task prompt received
+- **Last user request**: Approved task prompt received for spec-driven frontend rebuild
 - **Pending clarifications**: none
-- **Delivered results**: Run started notification sent; periodic progress reports sent
+- **Delivered results**: Complete Next.js frontend rebuild strictly anchored to FastAPI backend contracts and schema.sql, fully verified by independent victory audit.
 
 ## Project Status
 - **Phase**: complete
+- **Routing Decision**: General path -> teamwork_orchestrator (ID: 55e0bf3f-dbbe-407b-930a-d465c34fe1ef)
 
 ## Victory Audit Status
 - **Triggered**: yes
@@ -34,5 +33,9 @@ Orchestrate VOXPREP Backend MVP implementation across Phases 0 to 4.
 - **Retry count**: 0
 
 ## Artifact Index
-- .agents/teamwork/ORIGINAL_REQUEST.md — Authoritative task prompt record
-
+- c:\Project\VoxPrep\.agents\teamwork\ORIGINAL_REQUEST.md — Authoritative user request record
+- c:\Project\VoxPrep\.agents\teamwork\BRIEFING.md — Sentinel persistent briefing
+- c:\Project\VoxPrep\.agents\teamwork\handoff.md — Sentinel final handoff report
+- c:\Project\VoxPrep\.agents\teamwork\orchestrator\handoff.md — Orchestrator handoff report
+- c:\Project\VoxPrep\.agents\teamwork\orchestrator\GATE_STATUS.md — Gate verification verdicts
+- c:\Project\VoxPrep\.agents\teamwork\victory_auditor_final\handoff.md — Independent Victory Auditor report

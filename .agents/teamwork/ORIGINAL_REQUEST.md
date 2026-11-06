@@ -1,112 +1,71 @@
 # Original User Request
 
-## Initial Request — 2026-11-05T15:53:09Z
+## Initial Request — 2026-11-06T09:11:48Z
 
-Build the backend MVP for VOXPREP — an AI-powered voice interview and communication coaching hackathon platform (Member A tasks) using FastAPI, NVIDIA NIM APIs (Nemotron LLM, Parakeet STT, Magpie TTS), and Supabase for persistence and authentication.
+Rebuild the Next.js frontend (`frontend/`) from the ground up as a capability showcase for VoxPrep, using the existing FastAPI backend (`backend/`) and database schema (`backend/schema.sql`) as the absolute single source of truth. Divide and execute the rebuild using the following specialized sub-agents: Agent A: API Client & State Architect, Agent B: Core Interaction Rooms (Interview & Coach), Agent C: Analytics Dashboards & Auth, Agent D: Quality, Build & Integration Lead.
 
-Working directory: d:\My Coding Environment\Projects\ASCEND_Projects\AI-Interviewer
+Working directory: c:\Project\VoxPrep
 Integrity mode: development
-
-Documentation references:
-- docs/00_PROJECT_OVERVIEW.md
-- docs/02_TECH_STACK.md
-- docs/03_PHASE_PLAN.md
-- docs/04_MVP_vs_EXTRA.md
-- docs/05_ACCEPTANCE_CRITERIA.md
-- docs/06_TASK_DIVISION.md
-- docs/07_GUARDRAILS.md
-- docs/08_AGENT_PROMPTS.md
 
 ## Requirements
 
-### R1. Phase 0: Project Initialization, Environment, and Setup
-- Set up and use a dedicated Python virtual environment (`.venv`) for all package installations, development, testing, and service execution.
-- Initialize the `backend/` directory structure matching the specification:
-  - `backend/app/main.py` with CORS middleware configured and `GET /health` returning `{"status": "ok"}`.
-  - `backend/requirements.txt` containing all required packages (FastAPI, uvicorn, openai, supabase, python-dotenv, httpx, pydantic, pytest, etc.) installed into `.venv`.
-  - `backend/.env.example` documenting required environment variables: `NVIDIA_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`.
-  - Supabase SQL schema script defining `users`, `interview_sessions`, and `coach_sessions` tables.
-- Do not build frontend code, do not build post-MVP features, and do not commit real API keys.
+### R1. Single Source of Truth & Backend Contract Alignment
+- Rebuild the Next.js frontend (`frontend/`) from the ground up, using the existing FastAPI backend (`backend/`) and database schema (`backend/schema.sql`) as the absolute single source of truth.
+- Build ONLY what the backend requires and defines—no extra dummy features, no superfluous tabs, and no mocked bloat. Every UI element, form, and dashboard card must directly map to an active backend route, model, or database field across `backend/app/main.py`, `backend/app/routers/auth.py`, `backend/app/routers/voice.py`, `backend/app/routers/interview.py`, `backend/app/routers/coach.py`, `backend/app/models/report.py`, and `backend/schema.sql`.
+- Do NOT create features not backed by backend endpoints, and do NOT modify backend route definitions or database schemas.
 
-### R2. Phase 1: AI Services, Voice Pipeline, and Authentication
-- NVIDIA API configuration: Verify the current Parakeet STT and Magpie TTS endpoint URLs, request formats, and model identifiers before implementation. Do not assume all NVIDIA NIM services use identical REST formats.
-- Implement `backend/app/services/llm.py`: Async wrapper around NVIDIA Nemotron (`nvidia/llama-3.1-nemotron-70b-instruct`) using the OpenAI-compatible SDK with base URL `https://integrate.api.nvidia.com/v1`, exposing `async def chat(messages: list, system_prompt: str) -> str`. Retry once on failure, then return a friendly error.
-- Implement `backend/app/services/stt.py`: NVIDIA Parakeet ASR REST API integration exposing `async def transcribe(audio_bytes: bytes) -> str | None`. On failure, return `None` and log the error.
-- Implement `backend/app/services/tts.py`: NVIDIA Magpie TTS REST API integration exposing `async def synthesize(text: str) -> bytes | None`. On failure, return `None` (frontend falls back to Web Speech API).
-- Implement `backend/app/routers/voice.py`: `POST /voice/process` endpoint accepting an audio blob, executing STT -> LLM -> TTS, and returning audio bytes.
-- Implement `backend/app/routers/auth.py`: `POST /auth/register` and `POST /auth/login` using the Supabase Auth SDK.
-- Implement `backend/app/db/supabase.py`: Supabase client singleton.
-- Provide sample curl commands to test each endpoint.
+### R2. API Client and Application State
+- Implement `frontend/lib/api.ts` with 100% strict TypeScript types matching the Pydantic schemas in `backend/app/routers/` and `backend/app/models/`.
+- Provide typed client methods for all 9 backend endpoints (`auth`, `voice`, `interview`, `coach`, `health`).
+- Implement clean Zustand state in `frontend/store/useStore.ts` storing only live user sessions, current active session IDs, and report payloads.
 
-### R3. Phase 2: AI Interviewer Agent and Session Management
-- Implement `backend/app/agents/interviewer.py`:
-  - `InterviewSession` class with `session_id`, user info, `interview_type` (`hr` or `technical`), question history, and dimension scores.
-  - System prompts and logic adhering to `docs/08_AGENT_PROMPTS.md` and `docs/07_GUARDRAILS.md`.
-  - Methods: `start_session(candidate_name, role, experience, interview_type) -> opening_message` and `process_answer(session_id, answer_text) -> {"spoken_response": str, "is_complete": bool}`.
-  - Evaluate answers on 4 dimensions: Relevance, Clarity, Depth, Examples (1–10 scale).
-  - Enforce session boundaries: maximum 5 questions per session, maximum 1 follow-up per question.
-  - Session persistence: Supabase must be the persistent source of truth for session state; load and update session data as requests arrive.
-- Implement `backend/app/services/report.py`: `generate_report(session_data) -> dict` generating structured JSON report per `docs/08_AGENT_PROMPTS.md`.
-- Implement `backend/app/routers/interview.py`:
-  - `POST /interview/start`: body `{candidate_name, role, experience_level, interview_type}`, returns `{session_id, opening_message}`.
-  - `POST /interview/respond`: body `{session_id, answer_text}`, returns `{spoken_response, is_complete, follow_up_or_next}`.
-  - `POST /interview/end`: body `{session_id}`, triggers report generation, persists completed session and report to Supabase `interview_sessions`.
-  - `GET /interview/report/{session_id}`: returns full JSON report.
-- Save complete sessions (questions, answers, scores, report) to Supabase `interview_sessions`.
-- Document exact request and response shapes for all endpoints so Member B can connect the frontend.
+### R3. Core Interaction Rooms (Interview and Coach)
+- **Technical/HR Interview Room (`/interview`)**:
+  - WebRTC video/audio stream for candidate preview.
+  - Automatically call `POST /interview/start` to obtain `session_id` and verbal opening greeting. Support guest access with optional `user_id` or active authenticated user ID.
+  - Voice recording component capturing audio, posting to `POST /voice/process` and `POST /interview/respond`.
+  - Spoken audio playback of interviewer's response with natural turn-taking.
+  - "End Interview" trigger calling `POST /interview/end` and redirecting directly to `/analytics/interview`.
+- **Communication Coach Room (`/coach`)**:
+  - Mode selector with the exact 3 backend modes: `conversation`, `answer_training`, and `english_improvement`.
+  - Dynamically display `opening_message` and `next_prompt`.
+  - Real-time linguistic refinement card displaying `correction: { original, improved, reason }` when returned by `POST /coach/respond`.
+  - Voice recording with live WPM calculation and filler word detection.
+  - "Conclude Session" trigger calling `POST /coach/end`.
 
-### R4. Phase 3: AI Communication Coach Agent
-- Implement `backend/app/agents/coach.py`:
-  - `CoachSession` class with `session_id`, `user_id`, `mode`, and exchange history.
-  - Supported modes: `"conversation"`, `"answer_training"`, `"english_improvement"`.
-  - System prompts and rules adhering to `docs/08_AGENT_PROMPTS.md` and `docs/07_GUARDRAILS.md`.
-  - Methods: `start_session(user_id, mode) -> opening_message` (loading user communication profile from Supabase) and `process_response(session_id, user_text) -> {"coach_message": str, "correction": {original, improved, reason} | None, "next_prompt": str}`.
-  - Correct at most 1–2 items per exchange; maintain supportive tone, never interrupt.
-  - On session end: update user communication profile (`skill_level`, `weak_areas`, `strong_areas`) in Supabase.
-- Implement `backend/app/routers/coach.py`:
-  - `POST /coach/start`: body `{user_id, mode}`, returns `{session_id, opening_message}`.
-  - `POST /coach/respond`: body `{session_id, user_text}`, returns `{coach_message, correction, next_prompt}`.
-  - `POST /coach/end`: body `{session_id}`, saves session exchanges to Supabase `coach_sessions` and updates user profile.
-- Save session exchanges to Supabase `coach_sessions` table.
-- Document exact request and response shapes for all coach endpoints.
+### R4. Analytics Dashboards and Authentication
+- **Interview Report (`/analytics/interview`)**: Render the exact `InterviewReport` model with normalized overall score (0–100%), 4 dimension scores (`relevance`, `clarity`, `depth`, `examples`), summary, coach recommendation with CTA, strengths, weaknesses, action items, and per-question breakdown table.
+- **Communication Report (`/analytics/communication`)**: Render session summary including WPM, filler word count, grammar score, fluency tier, key learnings, and logged linguistic corrections.
+- **Auth Pages (`/login`, `/register`)**: Simple, clean forms calling `POST /auth/login` and `POST /auth/register`. Interaction rooms allow guest / unauthenticated access where the backend accepts optional `user_id`.
+- **Score Normalization**: All scores on the 1.0–10.0 backend scale must be cleanly normalized for UI percentage display (`score <= 10 ? Math.round(score * 10) : score`).
 
-### R5. Phase 4: Production Hardening, Error Handling, and Deployment
-- Global error handling: all endpoints return meaningful JSON errors with appropriate HTTP status codes, never crashing silently.
-- Provide comprehensive backend documentation in `README.md` (setup steps including `.venv` activation, required environment variables, execution instructions, API contract reference for Member B).
-- Deployment to Railway:
-  - Provide containerization/deployment configuration files (`Dockerfile`, `railway.json` / `Procfile`).
-  - If Railway CLI and credentials are authenticated in the environment, execute live deployment to Railway and confirm `GET /health` on the production URL. Otherwise, document the exact Railway deployment steps and verify production startup locally.
+### R5. Styling, Quality, Build & Verification
+- Enforce strict styling: dark palette (`#0B1120`, `#111A2E`, `#2563EB`), responsive layouts, zero video caption clutter.
+- Verification mechanism: Ensure clean build, zero TypeScript type errors (`npx tsc --noEmit`), zero ESLint errors/warnings (`npm run lint`), and automated scripted integration verification against the running FastAPI backend on `http://127.0.0.1:8000`.
 
 ## Acceptance Criteria
 
-### Phase 0
-- [ ] Dedicated Python virtual environment (`.venv`) is created, and all packages in `backend/requirements.txt` are installed into `.venv`.
-- [ ] `backend/app/main.py` is present, starts cleanly with uvicorn from `.venv`, and `GET /health` returns HTTP 200 with `{"status": "ok"}`.
-- [ ] SQL schema script is provided defining `users`, `interview_sessions`, and `coach_sessions` with all required columns and constraints.
-- [ ] `backend/requirements.txt` installs without dependency conflicts and `backend/.env.example` documents all required keys without real secrets.
+### Type Safety & Build
+- [ ] `npx tsc --noEmit` exits with code 0 and 0 type errors.
+- [ ] `npm run lint` exits with code 0 and 0 warnings or errors.
+- [ ] `npm run build` exits with code 0 and produces a clean production build.
 
-### Phase 1
-- [ ] Verified endpoint URLs, payload schemas, and model identifiers for Parakeet STT and Magpie TTS REST APIs before implementation.
-- [ ] `services/llm.py`, `services/stt.py`, `services/tts.py`, `routers/voice.py`, `routers/auth.py`, and `db/supabase.py` exist and import cleanly in `.venv`.
-- [ ] Automated tests (with mock fallbacks when live API keys are absent) verify `POST /voice/process`, `POST /auth/register`, and `POST /auth/login`.
-- [ ] STT and TTS services handle errors by returning `None` without unhandled exceptions.
-- [ ] LLM client implements single retry logic on failure before returning friendly error.
-- [ ] Sample curl commands are provided to test each Phase 1 endpoint.
+### Backend Contract & API Client
+- [ ] `frontend/lib/api.ts` provides strictly typed client functions for all 9 backend endpoints: `POST /auth/register`, `POST /auth/login`, `POST /voice/process`, `POST /interview/start`, `POST /interview/respond`, `POST /interview/end`, `GET /interview/report/{session_id}`, `POST /coach/start`, `POST /coach/respond`, `POST /coach/end`, and `GET /health`.
+- [ ] `frontend/store/useStore.ts` manages Zustand state holding only live user sessions, active session IDs, and report payloads without mocked bloat.
+- [ ] No backend route definitions or database schemas are modified.
 
-### Phase 2
-- [ ] `POST /interview/start` initializes a session stored in Supabase and returns `session_id` and `opening_message`.
-- [ ] `POST /interview/respond` retrieves session state from Supabase, updates history, evaluates the answer across 4 dimensions (1–10), enforces <=1 follow-up and <=5 questions, and persists state back to Supabase.
-- [ ] `POST /interview/end` triggers `generate_report`, saves full report and final scores to Supabase, and `GET /interview/report/{session_id}` returns the complete report JSON.
-- [ ] Endpoint request/response contracts are fully documented for Member B.
+### Core Interaction Rooms
+- [ ] `/interview` initializes with candidate preview, calls `POST /interview/start` to retrieve `session_id` and opening greeting, accepts audio input sent to `POST /voice/process` and `POST /interview/respond`, plays interviewer audio responses, and ends session via `POST /interview/end` with redirect to `/analytics/interview`.
+- [ ] `/coach` provides mode selection among `conversation`, `answer_training`, and `english_improvement`, displays `opening_message` and `next_prompt`, renders `correction` cards when returned by `POST /coach/respond`, computes live WPM and filler word metrics during recording, and concludes via `POST /coach/end`.
+- [ ] Guest / unauthenticated access works in interaction rooms where backend allows optional `user_id`.
 
-### Phase 3
-- [ ] `POST /coach/start` loads user profile from Supabase and initiates a session in `"conversation"`, `"answer_training"`, or `"english_improvement"` mode.
-- [ ] `POST /coach/respond` processes user input, offers at most 1–2 constructive corrections without interrupting, and updates session history in Supabase.
-- [ ] `POST /coach/end` persists session data to `coach_sessions` and updates user communication profile in Supabase.
-- [ ] Coach endpoint contracts are fully documented for Member B.
+### Analytics & Authentication
+- [ ] `/analytics/interview` renders overall score normalized to 0–100%, 4 dimension scores, summary, coach recommendation with CTA, strengths, weaknesses, action items, and question breakdown table matching `InterviewReport`.
+- [ ] `/analytics/communication` renders session summary including WPM, filler word count, grammar score, fluency tier, key learnings, and linguistic corrections.
+- [ ] `/login` and `/register` authenticate and register users via `POST /auth/login` and `POST /auth/register`.
+- [ ] All 1.0–10.0 backend scale scores are normalized for UI percentage display using `score <= 10 ? Math.round(score * 10) : score`.
+- [ ] No UI elements, tabs, or settings toggles exist that are not backed by active backend endpoints.
 
-### Phase 4
-- [ ] All endpoints return structured JSON error responses on invalid inputs, missing fields, or internal failures.
-- [ ] Backend section of `README.md` documents setup (`.venv` creation and activation), environment variables, execution instructions, and complete API reference.
-- [ ] Deployment configuration files (`Dockerfile`, `railway.json` / `Procfile`) exist, and production health check is verified (live on Railway if authenticated, or verified locally with container/production settings).
-
+### Integration Verification
+- [ ] Scripted verification against `http://127.0.0.1:8000` confirms successful end-to-end payload exchange across the API client and mock/live interaction flows.

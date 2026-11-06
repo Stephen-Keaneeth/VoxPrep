@@ -1,180 +1,580 @@
 /**
- * VOXPREP Frontend API Client
- * Aligned 100% with Member A's FastAPI backend (http://localhost:8000)
+ * VOXPREP Authoritative Frontend API Client
+ * 100% strictly typed client aligned with the FastAPI backend routers:
+ * - app/routers/auth.py
+ * - app/routers/voice.py
+ * - app/routers/interview.py
+ * - app/routers/coach.py
+ * - app/models/report.py
+ * - app/main.py
+ *
+ * Base URL defaults to process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
  */
 
-export interface VoiceProcessResponse {
-  status: "success" | "fallback" | "error";
-  transcript: string;
-  spoken_response: string;
-  ai_response: string; // Alias for spoken_response
-  audio_base64?: string;
-  audio_url?: string;
-  session_id?: string;
-  duration_seconds?: number;
-  mode?: string;
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
+// =============================================================================
+// Error Handling & Standard Backend Error Envelope
+// =============================================================================
+
+export interface ApiValidationErrorItem {
+  loc?: (string | number)[];
+  msg?: string;
+  type?: string;
 }
 
-export interface AuthUser {
+export interface ApiErrorEnvelope {
+  detail: string | ApiValidationErrorItem[];
+  error_type?: "http_error" | "validation_error" | "internal_server_error" | string;
+  status_code?: number;
+}
+
+export class ApiError extends Error {
+  status: number;
+  detail: string | ApiValidationErrorItem[];
+  errorType?: string;
+
+  constructor(status: number, detail: string | ApiValidationErrorItem[], errorType?: string) {
+    let message = `API request failed with status ${status}`;
+    if (typeof detail === "string") {
+      message = detail;
+    } else if (Array.isArray(detail)) {
+      message = detail
+        .map((item) => (item.msg ? `${item.loc?.join(".") || "field"}: ${item.msg}` : JSON.stringify(item)))
+        .join("; ");
+    }
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+    this.errorType = errorType;
+  }
+}
+
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    let detail: string | ApiValidationErrorItem[] = res.statusText || "Unknown server error";
+    let errorType: string | undefined;
+
+    try {
+      const errJson = (await res.json()) as ApiErrorEnvelope;
+      if (errJson && errJson.detail !== undefined) {
+        detail = errJson.detail;
+        errorType = errJson.error_type;
+      }
+    } catch {
+      // Body not JSON; retain default statusText
+    }
+
+    throw new ApiError(res.status, detail, errorType);
+  }
+
+  return (await res.json()) as T;
+}
+
+// =============================================================================
+// 1. Health Probe Models (backend/app/main.py)
+// =============================================================================
+
+export interface HealthResponse {
+  status: "ok" | string;
+}
+
+// =============================================================================
+// 2. Authentication Models (backend/app/routers/auth.py)
+// =============================================================================
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface UserProfile {
   id: string;
   email: string;
-  name: string;
+  name?: string;
+  token?: string;
 }
 
 export interface AuthResponse {
-  user: AuthUser;
+  user: UserProfile;
   access_token: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Backward compatibility alias
+export type AuthUser = UserProfile;
+
+// =============================================================================
+// 3. Voice Pipeline Models (backend/app/routers/voice.py)
+// =============================================================================
+
+export interface VoiceProcessResponse {
+  transcript: string;
+  spoken_response: string;
+  audio_base64: string | null;
+  session_id: string | null;
+  // Backward compatibility alias for UI components
+  ai_response?: string;
+  audio_url?: string;
+}
+
+// =============================================================================
+// 4. Interviewer Agent Models (backend/app/routers/interview.py & models/report.py)
+// =============================================================================
+
+export interface InterviewStartRequest {
+  candidate_name: string;
+  role: string;
+  experience_level: string;
+  interview_type: "hr" | "technical";
+  user_id?: string | null;
+}
+
+export interface InterviewStartResponse {
+  session_id: string;
+  opening_message: string;
+}
+
+export interface InterviewRespondRequest {
+  session_id: string;
+  answer_text: string;
+}
+
+export interface InterviewRespondResponse {
+  spoken_response: string;
+  is_complete: boolean;
+  follow_up_or_next: "follow_up" | "next";
+  question_index: number;
+  current_question_index: number;
+  total_questions: number;
+}
+
+export interface DimensionScores {
+  relevance: number;
+  clarity: number;
+  depth: number;
+  examples: number;
+}
+
+export interface QuestionBreakdownItem {
+  question: string;
+  answer_summary: string;
+  scores: DimensionScores;
+  feedback: string;
+}
+
+export interface InterviewReport {
+  overall_score: number;
+  dimension_scores: DimensionScores;
+  strengths: string[];
+  areas_for_improvement: string[];
+  question_breakdown: QuestionBreakdownItem[];
+  action_items: string[];
+  coach_recommendation?: string;
+  summary?: string;
+  // Aliases mirroring backend model_post_init for backward compatibility
+  weaknesses?: string[];
+  improvement_tips?: string[];
+}
+
+export type BackendInterviewReport = InterviewReport;
+
+export interface InterviewEndRequest {
+  session_id: string;
+}
+
+export interface InterviewEndResponse {
+  session_id: string;
+  status: "completed" | string;
+  message: string;
+  report: InterviewReport;
+}
+
+// =============================================================================
+// 5. Communication Coach Agent Models (backend/app/routers/coach.py)
+// =============================================================================
+
+export interface CoachCorrection {
+  original: string;
+  improved: string;
+  reason: string;
+}
+
+export interface CoachStartRequest {
+  user_id: string;
+  mode: "conversation" | "answer_training" | "english_improvement";
+}
+
+export interface CoachStartResponse {
+  session_id: string;
+  opening_message: string;
+  mode: "conversation" | "answer_training" | "english_improvement" | string;
+}
+
+export interface CoachRespondRequest {
+  session_id: string;
+  user_text: string;
+}
+
+export interface CoachRespondResponse {
+  coach_message: string;
+  correction: CoachCorrection | null;
+  next_prompt: string;
+}
+
+export interface CoachEndRequest {
+  session_id: string;
+}
+
+export interface CoachSessionSummary {
+  exchanges_count: number;
+  corrections_count: number;
+  mode: string;
+  key_learnings: string[];
+  encouragement: string;
+  [key: string]: unknown;
+}
+
+export interface UserCommunicationProfile {
+  skill_level: "beginner" | "intermediate" | "advanced" | string;
+  weak_areas: string[];
+  strong_areas: string[];
+  sessions_count: number;
+  last_mode?: string;
+  last_session_id?: string;
+  last_updated?: string;
+  [key: string]: unknown;
+}
+
+export interface CoachEndResponse {
+  session_id: string;
+  status: "completed" | string;
+  summary: CoachSessionSummary;
+  profile_updated: UserCommunicationProfile;
+  updated_profile?: UserCommunicationProfile;
+}
+
+// =============================================================================
+// Score Normalization Utility (1.0 - 10.0 scale -> 0 - 100% percentage display)
+// =============================================================================
 
 /**
- * Checks if the FastAPI backend server is reachable and healthy.
+ * Normalizes scores on the 1.0 - 10.0 backend scale into 0 - 100 integer percentages.
+ * Rule: score <= 10 ? Math.round(score * 10) : Math.round(score)
+ */
+export function normalizeScore(score: number): number {
+  if (score <= 10) {
+    return Math.round(score * 10);
+  }
+  return Math.round(score);
+}
+
+// =============================================================================
+// Typed Endpoint Client Functions
+// =============================================================================
+
+/**
+ * GET /health
+ * Service liveness probe.
+ */
+export async function checkHealth(signal?: AbortSignal): Promise<HealthResponse> {
+  const res = await fetch(`${API_BASE_URL}/health`, {
+    method: "GET",
+    signal,
+  });
+  return handleResponse<HealthResponse>(res);
+}
+
+/**
+ * Checks if the backend is reachable and reports healthy status.
  */
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/health`, {
-      method: "GET",
-      signal: AbortSignal.timeout(2500),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.status === "ok";
-    }
-    return false;
+    const data = await checkHealth(AbortSignal.timeout(3000));
+    return data.status === "ok";
   } catch {
     return false;
   }
 }
 
 /**
- * Sends recorded audio bytes to the backend voice pipeline.
- * Endpoint: POST /voice/process (multipart/form-data)
- * Parameters match backend/app/routers/voice.py:
- * - file: UploadFile
- * - agent_type: Form("interview" | "coach")
- * - session_id: Form(Optional[str])
- * - conversation_history: Form(Optional[str])
+ * POST /auth/register
+ * Registers new user account with Supabase Auth and seeds user communication profile.
  */
+export async function register(req: RegisterRequest): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  return handleResponse<AuthResponse>(res);
+}
+
+export async function registerUser(
+  email: string,
+  password: string,
+  name?: string
+): Promise<AuthResponse> {
+  return register({ email, password, name });
+}
+
+/**
+ * POST /auth/login
+ * Authenticates user credentials with Supabase Auth.
+ */
+export async function login(req: LoginRequest): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  return handleResponse<AuthResponse>(res);
+}
+
+export async function loginUser(email: string, password: string): Promise<AuthResponse> {
+  return login({ email, password });
+}
+
+/**
+ * POST /voice/process
+ * Complete voice pipeline: STT -> LLM dialog reply -> TTS synthesis.
+ */
+export async function processVoice(formData: FormData): Promise<VoiceProcessResponse> {
+  const res = await fetch(`${API_BASE_URL}/voice/process`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await handleResponse<VoiceProcessResponse>(res);
+  if (!data.ai_response) {
+    data.ai_response = data.spoken_response;
+  }
+  return data;
+}
+
 export async function sendVoiceAudio(
   audioBlob: Blob,
-  agentType: "interview" | "coach" = "interview",
+  agentType: "interview" | "coach" | string = "interview",
   conversationHistory: string = "",
   sessionId?: string
 ): Promise<VoiceProcessResponse> {
   const formData = new FormData();
-  formData.append("file", audioBlob, "user_recording.webm");
+  formData.append("file", audioBlob, "recording.wav");
   formData.append("agent_type", agentType);
-  formData.append("mode", agentType); // backwards compatibility
-  if (sessionId) formData.append("session_id", sessionId);
+  if (sessionId) {
+    formData.append("session_id", sessionId);
+  }
   if (conversationHistory) {
     formData.append("conversation_history", conversationHistory);
-    formData.append("context", conversationHistory);
   }
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/voice/process`, {
-      method: "POST",
-      body: formData,
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const spokenText = data.spoken_response || data.ai_response || data.response || "I heard your response.";
-      return {
-        status: "success",
-        transcript: data.transcript || "Audio successfully processed.",
-        spoken_response: spokenText,
-        ai_response: spokenText,
-        audio_base64: data.audio_base64,
-        audio_url: data.audio_url,
-        session_id: data.session_id || sessionId,
-        duration_seconds: data.duration_seconds,
-        mode: agentType,
-      };
-    }
-  } catch (err) {
-    console.warn("Backend /voice/process endpoint unavailable, using graceful fallback:", err);
-  }
-
-  // Graceful fallback simulation (ensures candidate never gets blocked)
-  return getSimulatedVoiceResponse(agentType, conversationHistory, sessionId);
+  return processVoice(formData);
 }
 
 /**
- * Registers a new user with FastAPI POST /auth/register
+ * POST /interview/start
+ * Initializes a structured mock interview session.
  */
-export async function registerUser(email: string, password: string, name: string): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE_URL}/auth/register`, {
+export async function startInterview(
+  req: InterviewStartRequest
+): Promise<InterviewStartResponse> {
+  const res = await fetch(`${API_BASE_URL}/interview/start`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name }),
+    body: JSON.stringify(req),
   });
+  return handleResponse<InterviewStartResponse>(res);
+}
 
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.detail || "Registration failed. Please check your inputs.");
-  }
-
-  return res.json();
+export async function startInterviewSession(
+  req: InterviewStartRequest
+): Promise<InterviewStartResponse> {
+  return startInterview(req);
 }
 
 /**
- * Authenticates user credentials with FastAPI POST /auth/login
+ * POST /interview/respond
+ * Evaluates candidate answer, scores rubric, and progresses interview.
  */
-export async function loginUser(email: string, password: string): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+export async function respondInterview(
+  req: InterviewRespondRequest
+): Promise<InterviewRespondResponse> {
+  const res = await fetch(`${API_BASE_URL}/interview/respond`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(req),
   });
+  return handleResponse<InterviewRespondResponse>(res);
+}
 
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.detail || "Invalid email or password.");
-  }
-
-  return res.json();
+export async function submitInterviewAnswer(
+  sessionId: string,
+  answerText: string
+): Promise<InterviewRespondResponse> {
+  return respondInterview({ session_id: sessionId, answer_text: answerText });
 }
 
 /**
- * Realistic fallback response generator when testing offline or before backend is deployed
+ * POST /interview/end
+ * Concludes interview session, generates evaluation report, and persists state.
  */
-function getSimulatedVoiceResponse(
-  agentType: "interview" | "coach",
-  contextText: string,
-  sessionId?: string
-): VoiceProcessResponse {
-  if (agentType === "coach") {
-    const responseText =
-      "Clear delivery and steady pacing. You articulated the trade-offs well without relying on excessive filler words.";
-    return {
-      status: "fallback",
-      transcript:
-        "When the service dependencies were delayed, we engineered a mock decoupled stub so development continued unblocked.",
-      spoken_response: responseText,
-      ai_response: responseText,
-      duration_seconds: 4.5,
-      session_id: sessionId,
-      mode: "coach",
-    };
-  }
-
-  // Interview Agent: Generate tailored follow-up based directly on the actual active interview question
-  const cleanContext = (contextText || "").replace(/^"|"$/g, "").trim();
-  const followUpQuestion = cleanContext.length > 20
-    ? `Strong technical explanation. Building directly on that, what specific observability metrics or automated testing would you configure to detect failures early?`
-    : "Good architectural direction. How would you handle distributed consistency and zero-downtime deployments for that system?";
-
-  return {
-    status: "fallback",
-    transcript:
-      "I evaluated the architectural trade-offs between consistency and latency, and designed the service boundaries to isolate failure domains with circuit breakers and retries.",
-    spoken_response: followUpQuestion,
-    ai_response: followUpQuestion,
-    duration_seconds: 5.5,
-    session_id: sessionId,
-    mode: "interview",
-  };
+export async function endInterview(
+  req: InterviewEndRequest
+): Promise<InterviewEndResponse> {
+  const res = await fetch(`${API_BASE_URL}/interview/end`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  return handleResponse<InterviewEndResponse>(res);
 }
+
+export async function endInterviewSession(
+  sessionId: string
+): Promise<InterviewEndResponse> {
+  return endInterview({ session_id: sessionId });
+}
+
+/**
+ * GET /interview/report/{session_id}
+ * Retrieves comprehensive performance report for a completed interview session.
+ */
+export async function getInterviewReport(
+  sessionId: string
+): Promise<InterviewReport> {
+  const res = await fetch(`${API_BASE_URL}/interview/report/${encodeURIComponent(sessionId)}`, {
+    method: "GET",
+  });
+  return handleResponse<InterviewReport>(res);
+}
+
+/**
+ * POST /coach/start
+ * Initializes communication coach session in one of 3 modes.
+ */
+export async function startCoach(
+  req: CoachStartRequest
+): Promise<CoachStartResponse> {
+  const res = await fetch(`${API_BASE_URL}/coach/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  return handleResponse<CoachStartResponse>(res);
+}
+
+export async function startCoachSession(
+  userId: string,
+  mode: "conversation" | "answer_training" | "english_improvement"
+): Promise<CoachStartResponse> {
+  return startCoach({ user_id: userId, mode });
+}
+
+/**
+ * POST /coach/respond
+ * Processes user speech, returns supportive message and up to 1-2 linguistic corrections.
+ */
+export async function respondCoach(
+  req: CoachRespondRequest
+): Promise<CoachRespondResponse> {
+  const res = await fetch(`${API_BASE_URL}/coach/respond`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  return handleResponse<CoachRespondResponse>(res);
+}
+
+export async function submitCoachResponse(
+  sessionId: string,
+  userText: string
+): Promise<CoachRespondResponse> {
+  return respondCoach({ session_id: sessionId, user_text: userText });
+}
+
+/**
+ * POST /coach/end
+ * Concludes coach session, updates communication profile, and persists state.
+ */
+export async function endCoach(
+  req: CoachEndRequest
+): Promise<CoachEndResponse> {
+  const res = await fetch(`${API_BASE_URL}/coach/end`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  return handleResponse<CoachEndResponse>(res);
+}
+
+export async function endCoachSession(
+  sessionId: string
+): Promise<CoachEndResponse> {
+  return endCoach({ session_id: sessionId });
+}
+
+// =============================================================================
+// Unified API Namespace Export
+// =============================================================================
+
+export const api = {
+  health: {
+    check: checkHealth,
+    isHealthy: checkBackendHealth,
+  },
+  auth: {
+    register,
+    login,
+  },
+  voice: {
+    process: processVoice,
+    sendAudio: sendVoiceAudio,
+  },
+  interview: {
+    start: startInterview,
+    respond: respondInterview,
+    end: endInterview,
+    getReport: getInterviewReport,
+  },
+  coach: {
+    start: startCoach,
+    respond: respondCoach,
+    end: endCoach,
+  },
+  utils: {
+    normalizeScore,
+  },
+};
+
+export const apiClient = {
+  checkHealth,
+  checkBackendHealth,
+  register,
+  registerUser,
+  login,
+  loginUser,
+  processVoice,
+  sendVoiceAudio,
+  startInterview,
+  startInterviewSession,
+  respondInterview,
+  submitInterviewAnswer,
+  endInterview,
+  endInterviewSession,
+  getInterviewReport,
+  startCoach,
+  startCoachSession,
+  respondCoach,
+  submitCoachResponse,
+  endCoach,
+  endCoachSession,
+  normalizeScore,
+};
+
+export default api;
+
